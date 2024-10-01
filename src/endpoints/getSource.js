@@ -1,8 +1,6 @@
-const fs = require('fs').promises;
-const path = require('path');
-
 function getSource({ url, proxy }) {
     return new Promise(async (resolve, reject) => {
+
         if (!url) return reject('Missing url parameter')
         const context = await global.browser.createBrowserContext().catch(() => null);
         if (!context) return reject('Failed to create browser context')
@@ -38,17 +36,13 @@ function getSource({ url, proxy }) {
                 try {
                     if ([200, 302].includes(res.status()) && [url, url + '/'].includes(res.url())) {
                         await page.waitForNavigation({ waitUntil: 'load', timeout: 5000 }).catch(() => { });
-                        const allCookies = await page.cookies();
-                        const userAgent = await page.evaluate(() => navigator.userAgent);
-                        const relevantCookies = allCookies.filter(cookie => cookie.name === 'cf_clearance');
-                        await context.close();
-                        isResolved = true;
-                        clearInterval(cl);
-                        resolve({ userAgent, cookies: relevantCookies });
+                        const html = await page.content();
+                        await context.close()
+                        isResolved = true
+                        clearInterval(cl)
+                        resolve(html)
                     }
-                } catch (e) { 
-                    console.error('Error retrieving cookies:', e);
-                }
+                } catch (e) { }
             })
             await page.goto(url, {
                 waitUntil: 'domcontentloaded'
@@ -60,7 +54,7 @@ function getSource({ url, proxy }) {
                 reject(e.message)
             }
         }
+
     })
 }
-
 module.exports = getSource
